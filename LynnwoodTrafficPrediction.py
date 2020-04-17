@@ -67,8 +67,5 @@ def day_sum(df, daily):
     for d in dates:
        y = df.loc[df["Time"].dt.date == d, "Int Total"].sum()
        daily[i] = y
-       i+=1
-    
-       
-
-#day_sum(t196_19)
+       i+=1 
+  
