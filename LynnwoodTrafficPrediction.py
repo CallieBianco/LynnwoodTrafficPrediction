@@ -9,7 +9,7 @@
 #
 # Additional Documentation
 # Author: Callie Bianco
-# Version: 1.0 - 4/15/2020
+# Version: 1.3 - 4/21/2020
 # Written for Python 3.7.2
 
 # module imports
