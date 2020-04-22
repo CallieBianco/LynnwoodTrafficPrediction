@@ -2,7 +2,7 @@
 This is a project for my senior capstone project at University of Washington Bothell , c/o 2020. 
 
 Project Title: 
-Impacts on lynnwood Transportation from Forecasted Link Light Rail Use
+Impacts on Lynnwood Transportation from Forecasted Link Light Rail Use
 
 Overview:
 This project will develop a traffic simulation model that will predict the use of the incoming Link Light Rail to Lynnwood in 2024. This model will be used to analyze how the predicted Link Light Rail use will impact road traffic/travel times, bus use, and its subsequent environmental impacts. I also plan to analyze the potential new revenue stream for the city and apply this to future transportation projects.
