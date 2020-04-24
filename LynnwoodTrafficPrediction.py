@@ -1,4 +1,4 @@
-#============================================================
+#==============#============================================================
 # General Documentation
 # Lynnwood Traffic Prediction
 #
@@ -9,7 +9,7 @@
 #
 # Additional Documentation
 # Author: Callie Bianco
-# Version: 1.4 - 4/22/2020
+# Version: 1.5 - 4/24/2020
 # Written for Python 3.7.2
 
 # module imports
@@ -92,7 +92,6 @@ class DataInitialization:
         Calculates the daily totals using the hourly totals
         Parameters:
         df: DataFrame
-
         Returns:
         daily: Numpy array of daily totals
         """
@@ -151,9 +150,60 @@ class DataInitialization:
         (t196_19, t196_18, t200_19, t200_18) = self.read_files()
         print(t196_19)
         
+
 # running the program so far
 c = DataInitialization()
-#c.main(visual="B")
+(t196_19, t196_18, t200_19, t200_18) = c.read_files()
+
 
 # tests
 #c.tests()
+
+class HoltWinters:
+    """
+    This class will create a Holt-Winters methodology for predicting 
+    vehicle traffic into the future
+    """
+    def __init__(self):
+        pass
+
+    def trend(df, season_len):
+        """
+        Parameters:
+        df: Data Frame containing intersection total values
+        season_len: length of a season
+
+        Returns:
+        init_trend: float that represents the initial data trend
+        """
+        sum = 0.0
+        for i in range(season_len):
+            tot = (df["Int Total"][i+season_len] 
+            - df["Int Total"][i]) 
+            sum += tot/season_len
+        return sum/season_len
+
+    def init_season_indices(df, season_len):
+        """
+        Parameters:
+        df: Data Frame containing intersection total values
+        season_len: length of a season
+
+        Returns:
+        season_indices: initial sesasonal indicies
+        """
+        # determine number of seasons
+        num_days = len(df["Int Total"])
+        seasons = num_days / season_len
+   
+        # compute average of each season
+
+        # divide each data point in the season by its seasonal average
+
+        # form the seasonal indices
+        return num_days
+hw = HoltWinters
+c = DataInitialization()
+(t196_19, t196_18, t200_19, t200_18) = c.read_files()
+print(hw.init_season_indices(t196_19, 14))
+
