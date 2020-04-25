@@ -9,7 +9,7 @@
 #
 # Additional Documentation
 # Author: Callie Bianco
-# Version: 1.5 - 4/24/2020
+# Version: 1.6 - 4/25/2020
 # Written for Python 3.7.2
 
 # module imports
@@ -163,12 +163,18 @@ class HoltWinters:
     """
     This class will create a Holt-Winters methodology for predicting 
     vehicle traffic into the future
+
+    Math guidance credit:
+    NIST/SEMATECH e-Handbook of Statistical Methods, 
+    https://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm, Apr 21, 2020
     """
     def __init__(self):
         pass
 
     def trend(df, season_len):
         """
+        Calculates the intial trend in the data by taking the average
+        of trend averages over the length of each season
         Parameters:
         df: Data Frame containing intersection total values
         season_len: length of a season
@@ -185,6 +191,10 @@ class HoltWinters:
 
     def init_season_indices(df, season_len):
         """
+        Calculates the initial seasonal indices. Done by dividing each
+        value in a season by its seasonal average, then averaging out each
+        seasonal length.
+
         Parameters:
         df: Data Frame containing intersection total values
         season_len: length of a season
@@ -194,16 +204,27 @@ class HoltWinters:
         """
         # determine number of seasons
         num_days = len(df["Int Total"])
-        seasons = num_days / season_len
-   
+        seasons = int(num_days / season_len)
+
         # compute average of each season
-
+        int_total = df.to_numpy()
+        season_avg = np.reshape(int_total, newshape=(seasons, season_len))
+        season_mean = np.mean(season_avg, axis=1)
+        
+        # repeat average for length of season for division purposes
+        season_mean = np.repeat(season_mean, season_len)
+        season_mean = np.reshape(season_mean, (seasons, season_len))
+        
         # divide each data point in the season by its seasonal average
-
+        s = season_avg / season_mean
+        
         # form the seasonal indices
-        return num_days
+        seasonal_indices = np.mean(s, axis=0)
+        return seasonal_indices
+
+    def triple_exp_smooth(df, season_len, a, b, g, points):
+        return
 hw = HoltWinters
 c = DataInitialization()
 (t196_19, t196_18, t200_19, t200_18) = c.read_files()
-print(hw.init_season_indices(t196_19, 14))
-
+hw.init_season_indices(t196_19, 13)
