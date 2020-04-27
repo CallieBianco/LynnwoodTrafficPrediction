@@ -1,4 +1,4 @@
-#==============#============================================================
+#===================================================================
 # General Documentation
 # Lynnwood Traffic Prediction
 #
@@ -9,9 +9,9 @@
 #
 # Additional Documentation
 # Author: Callie Bianco
-# Version: 1.6 - 4/25/2020
+# Version: 1.7 - 4/27/2020
 # Written for Python 3.7.2
-
+#===================================================================
 # module imports
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -183,10 +183,9 @@ class HoltWinters:
         init_trend: float that represents the initial data trend
         """
         sum = 0.0
-        for i in range(season_len):
-            tot = (df["Int Total"][i+season_len] 
-            - df["Int Total"][i]) 
-            sum += tot/season_len
+        for i in range(season_len): 
+            sum += (df["Int Total"][i+season_len] 
+            - df["Int Total"][i]) /season_len
         return sum/season_len
 
     def init_season_indices(df, season_len):
@@ -214,7 +213,7 @@ class HoltWinters:
         # repeat average for length of season for division purposes
         season_mean = np.repeat(season_mean, season_len)
         season_mean = np.reshape(season_mean, (seasons, season_len))
-        
+
         # divide each data point in the season by its seasonal average
         s = season_avg / season_mean
         
@@ -223,8 +222,59 @@ class HoltWinters:
         return seasonal_indices
 
     def triple_exp_smooth(df, season_len, a, b, g, points):
-        return
+        """ Uses the inital trend and seasonal inidices to predict
+        points in the future
+        """
+        season_indices = HoltWinters.init_season_indices(df, season_len)
+        int_total = df.to_numpy()
+        tot_len = len(int_total)
+        forecast = np.zeros(tot_len + points)
+        m = np.arange(points)+1
+        j = 0
+        # want to predict a certain amount of points past our actual data
+        for i in range(tot_len + points):
+            mod_L = i % season_len
+            # set initial
+            if i == 0:
+                smooth_factor = int_total[0]
+                init_trend = HoltWinters.trend(df, season_len)
+                forecast[0] = int_total[0]
+            # forecast formula:
+            # y_x+m = smooth_factor + m*trend + season_indices_x-L+1+(m-1)modL
+            elif i > 0 and i < tot_len:
+                pt = int_total[i]
+                prev_smooth = pt
+                smooth = a * (pt - season_indices[mod_L]) 
+                + (1 - a) * (smooth_factor + init_trend)
+
+                trend = b * (smooth - prev_smooth) + (1 - b) * init_trend
+                season_indices[mod_L] = g * (pt - smooth) + (1 - g) * season_indices[mod_L]
+
+                forecast[i] = smooth + trend + season_indices[mod_L]
+            else:
+                pt = forecast[i-1]
+                prev_smooth = pt
+                smooth = a * (season_indices[mod_L]) 
+                + (1 - a) * (smooth_factor + init_trend)
+
+                trend = b * (smooth - prev_smooth) + (1 - b) * init_trend
+                if i > 84 + tot_len:
+                    forecast[i] = 1.05 * ((smooth + (m[j]+1 * trend)) + season_indices[mod_L] / 3)
+                else:
+                    forecast[i] = (smooth + (m[j]+1 * trend)) + season_indices[mod_L] / 3
+
+        return forecast
 hw = HoltWinters
 c = DataInitialization()
 (t196_19, t196_18, t200_19, t200_18) = c.read_files()
-hw.init_season_indices(t196_19, 13)
+both = [t196_18, t196_19]
+df2 = pd.concat(both)
+d = df2.to_numpy()
+h = hw.triple_exp_smooth(df2, 14, .86, .07, .93, 160)
+plt.plot(h)
+#t = t196_19.to_numpy()
+plt.plot(d)
+plt.show()
+
+
+
