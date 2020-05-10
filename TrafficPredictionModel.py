@@ -9,7 +9,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.11 - 5/6/2020
+# Version: 1.12 - 5/9/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -21,7 +21,7 @@ import datetime as dt
 import random as rand
 from DataInit import DataInitialization
 from TES import HoltWinters
-import LightRail
+from LightRail import LightRail
 
 def data_reqs():
     """
@@ -58,3 +58,11 @@ def TES_reqs():
     plt.show()
     
 
+def light_rail_reqs():
+    """
+    Run all code for 'Light-Rail requirements'
+    """
+    lr = LightRail()
+    lr.weekday()
+
+light_rail_reqs()

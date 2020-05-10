@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.11 - 5/6/2020
+# Version: 1.12 - 5/9/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -31,18 +31,53 @@ class LightRail:
         Generates random weekday light-rail usage 
         """
         choices = np.arange(0, 24, 1)
-        # 5% in the AM - 6 periods
-        morn = np.array([.005, .006, .008, .008, .01, .013])
-        # 40% morning peak - 4 periods
+        # 1% in the AM - 6 periods 
+        # light-rail is closed 2am-5am
+        morn = np.array([.003, .002, .0, .0, .0, .005])
+        # 40% AM peak - 4 periods
         morn_peak = np.array([.07, .1, .13, .1])
-        # 10% mid-day - 4 periods
-        mid_day = np.array([.03, .02, .02, .03])
-        # 40% afternoon peak - 4 periods
-        aft_peak = np.array([.1, .13, .1, .07])
-        # 5% night
-        night = np.array([.013, .01, .008, .008, .006, .005])
+        # 10% mid-day - 5 periods
+        mid_day = np.array([.02, .02, .02, .02, .02])
+        # 40% PM peak - 5 periods
+        aft_peak = np.array([.04, .06, .1, .12, .08])
+        # 9% night - 4 periods
+        night = np.array([.04, .025, .015, .01])
         trip_probs = np.concatenate((morn, morn_peak, mid_day, aft_peak, night))
-        a = np.random.choice(choices, size=10000, p=trip_probs)
+        a = np.random.choice(choices, size= 20000, p=trip_probs)
         times = np.sort(a)
-        plt.hist(times, bins=75)
+        plt.hist(times, bins=80)
+        
+        # label axis appropriately
+        hours = choices.astype('str')
+        h = 0
+        for h in range(len(hours)):
+            hours[h] += ":00"
+        plt.suptitle("Randomly Generated Hourly 2026 Light-Rail Passengers \n " + 
+        "(Boardings and Alightings)", fontsize=18, x=.51)
+        plt.title("Based on Sound Transit Estimates and Current Light-Rail Data")
+        plt.xlabel("Time")
+        plt.ylabel("Hourly Passengers")
+        plt.xticks(ticks=choices, labels=hours)
         plt.show()
+
+    def gbdt():
+        """
+        Gradient-Boosting Decision Tree algorithm. This algorithm
+        will predict the impact light-rail ridership will have on 196th
+        and 200th intersections based on travel method, day of week, and 
+        desired trip length
+        """
+        # calculate average ridership
+
+        # calculate residuals
+
+        # construct decision tree
+
+        # predict target label
+
+        # calculate new residuals
+
+        # repeat for number of estimators
+
+        # use all trees to predict target variable
+        return
