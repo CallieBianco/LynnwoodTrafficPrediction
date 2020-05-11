@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.10 - 5/5/2020
+# Version: 1.11 - 5/10/2020
 # Written for Python 3.7.2
 #==============================================================================
 
