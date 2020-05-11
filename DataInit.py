@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.9 - 5/4/2020
+# Version: 1.10 - 5/5/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -149,17 +149,41 @@ class DataInitialization:
            plt.ylabel("Total Cars")
            plt.xlabel("Day: Sept. - Nov.")
            plt.title(title)
-           plt.show()
         else:
             return "Invalid plot type given"
-    
+
+    def busy_days(self, df):
+        """ 
+        Determines the days of the week with most and least traffic
+
+        Parameters:
+        df: DataFrame containing data about an intersection
+
+        Returns:
+        best_day: weekday with most traffic on average
+        worst_day: day with least traffic on average (weekends included)
+        worst_weekday: day with least traffic, excluding weekends
+        """
+        # find the day of week with highest traffic for each intersection
+        df.index = pd.to_datetime(df.index, utc=True)
+        count = df.groupby(df.index.dayofweek).sum()
+        best_day = count.idxmax()
+        days = ['M', 'T', 'W', 'TH', 'F', 'SAT', 'SUN']
+        best_day = days[best_day[0]]
+        
+        # find the day of week with lowest traffic for each intersection
+        worst_day = count.idxmin()
+        worst_day = days[worst_day[0]]
+
+        return (best_day, worst_day)
+
     def tests(self):
         """
         Tests data frame accuracy in a variety of ways
         """     
         # Test 1: confirm 91 days in each dataset after totalling
         print("Beginning testing for Data Initialization Class")
-        (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = c.read_files()
+        (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = self.read_files()
         counts = [t196_19, t196_18, t196_17, t200_19, t200_18, t200_17]
         for d in counts:
             if len(d) != 91:

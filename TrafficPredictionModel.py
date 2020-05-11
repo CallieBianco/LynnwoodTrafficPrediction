@@ -63,6 +63,7 @@ def light_rail_reqs():
     Run all code for 'Light-Rail requirements'
     """
     lr = LightRail()
-    lr.weekday()
+    lr.road_impact()
 
 light_rail_reqs()
+

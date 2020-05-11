@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime as dt
 import random as rand
+from statistics import mode
+from DataInit import DataInitialization
+from TES import HoltWinters
 
 class LightRail:
     """
@@ -26,9 +29,15 @@ class LightRail:
     def __init__(self):
         pass
 
-    def weekday(self):
+    def weekday(self, plt):
         """
         Generates random weekday light-rail usage 
+
+        Parameters:
+        plt: Boolean to plot a histogram of hourly ridership
+
+        Returns:
+        riders: array of daily Light-Rail ridership
         """
         choices = np.arange(0, 24, 1)
         # 1% in the AM - 6 periods 
@@ -43,41 +52,74 @@ class LightRail:
         # 9% night - 4 periods
         night = np.array([.04, .025, .015, .01])
         trip_probs = np.concatenate((morn, morn_peak, mid_day, aft_peak, night))
-        a = np.random.choice(choices, size= 20000, p=trip_probs)
-        times = np.sort(a)
-        plt.hist(times, bins=80)
+
+        # find most accurate number of riders
+        anticipated_peak = 2500
+        riders = np.random.choice(choices, size= 20000, p=trip_probs)
+        times = np.sort(riders)
+
+        if plt == True:
+            plt.hist(times, bins=80)
         
-        # label axis appropriately
-        hours = choices.astype('str')
-        h = 0
-        for h in range(len(hours)):
-            hours[h] += ":00"
-        plt.suptitle("Randomly Generated Hourly 2026 Light-Rail Passengers \n " + 
-        "(Boardings and Alightings)", fontsize=18, x=.51)
-        plt.title("Based on Sound Transit Estimates and Current Light-Rail Data")
-        plt.xlabel("Time")
-        plt.ylabel("Hourly Passengers")
-        plt.xticks(ticks=choices, labels=hours)
-        plt.show()
+            # label axis appropriately
+            hours = choices.astype('str')
+            h = 0
+            for h in range(len(hours)):
+                hours[h] += ":00"
+            plt.suptitle("Randomly Generated Hourly 2026 Light-Rail Passengers \n " + 
+            "(Boardings and Alightings)", fontsize=18, x=.51)
+            plt.title("Based on Sound Transit Estimates and Current Light-Rail Data")
+            plt.xlabel("Time")
+            plt.ylabel("Hourly Passengers")
+            plt.xticks(ticks=choices, labels=hours)
+            plt.show()
+        return riders
+    
+    def weekend(self, plt):
+        riders = np.random.normal(size=20000)
 
-    def gbdt():
+        if plt == True:
+            plt.hist(times, bins=80)
+        
+            # label axis appropriately
+            hours = choices.astype('str')
+            h = 0
+            for h in range(len(hours)):
+                hours[h] += ":00"
+            plt.suptitle("Randomly Generated Hourly 2026 Light-Rail Passengers \n " + 
+            "(Boardings and Alightings)", fontsize=18, x=.51)
+            plt.title("Based on Sound Transit Estimates and Current Light-Rail Data")
+            plt.xlabel("Time")
+            plt.ylabel("Hourly Passengers")
+            plt.xticks(ticks=choices, labels=hours)
+            plt.show()
+        return riders
+
+    def road_impact(self):
         """
-        Gradient-Boosting Decision Tree algorithm. This algorithm
-        will predict the impact light-rail ridership will have on 196th
-        and 200th intersections based on travel method, day of week, and 
-        desired trip length
+        hmm
         """
-        # calculate average ridership
+        # travel probabilities
+        p_bus = .66
+        p_drive = .19
+        p_dropoff = .2
+        p_other = .13
+        
+        # best and worst day factor
+        c = DataInitialization()
+        (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = c.read_files()
+        roads = [t196_19, t196_18, t196_17, t200_19, t200_18, t200_17]
+        best = []
+        worst = []
 
-        # calculate residuals
+        for t in roads:
+            (high, low) = c.busy_days(t)
+            best.append(high)
+            worst.append(low)
+        most_traffic = mode(best)
+        least_traffic = mode(worst)
 
-        # construct decision tree
-
-        # predict target label
-
-        # calculate new residuals
-
-        # repeat for number of estimators
-
-        # use all trees to predict target variable
+        hw = HoltWinters()
+        f = hw.forecast_2026()
+        print(f)
         return
