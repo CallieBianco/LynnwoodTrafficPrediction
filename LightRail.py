@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.13 - 5/10/2020
+# Version: 1.14 - 5/11/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -29,16 +29,17 @@ class LightRail:
     def __init__(self):
         pass
 
-    def weekday(self, plt):
+    def weekday(self, plot=False):
         """
         Generates random weekday light-rail usage 
 
         Parameters:
-        plt: Boolean to plot a histogram of hourly ridership
+        plot: Boolean to plot a histogram of hourly ridership
 
         Returns:
         riders: array of daily Light-Rail ridership
         """
+
         choices = np.arange(0, 24, 1)
         # 1% in the AM - 6 periods 
         # light-rail is closed 2am-5am
@@ -55,10 +56,11 @@ class LightRail:
 
         # find most accurate number of riders
         anticipated_peak = 2500
-        riders = np.random.choice(choices, size= 20000, p=trip_probs)
+        num_riders = self.rider_estimate(choices, trip_probs, anticipated_peak)
+        riders = np.random.choice(choices, size=num_riders, p=trip_probs)
         times = np.sort(riders)
 
-        if plt == True:
+        if plot == True:
             plt.hist(times, bins=80)
         
             # label axis appropriately
@@ -72,14 +74,60 @@ class LightRail:
             plt.xlabel("Time")
             plt.ylabel("Hourly Passengers")
             plt.xticks(ticks=choices, labels=hours)
+            n_ride = "Number of Riders: " + str(num_riders)
+            plt.text(0, 2800, n_ride, bbox=dict(facecolor='green', alpha=.5))
             plt.show()
-        return riders
+        return num_riders
     
-    def weekend(self, plt):
-        riders = np.random.normal(size=20000)
+    def rider_estimate(self, times, probs, peak_est):
+        """
+        Finds the most appropriate estimate of daily boardings and alightings 
+        based on how well the distribution peak times reflect 
+        the expected peak times
 
-        if plt == True:
-            plt.hist(times, bins=80)
+        Parameters:
+        times: 24 hour cycle of times to choose from
+        probs: probabilities for each hour
+        peak_est: Integer estimating number of boardings/alightings during 
+                  the peak hours (7-11am and 4-7pm)
+
+        Returns:
+        rider_size: Integer with appropriate number of daily riders
+        """
+
+        # want estimate to be within 50 riders
+        tol = 50
+        best_diffs = []
+        best_sizes = []
+        sizes = np.arange(start=10000, stop=30000, step=50)
+        for s in sizes:
+            riders = np.random.choice(times, size=s, p=probs)
+            hour_counts = np.bincount(riders)
+            # average of trips 7-9am
+            am_peak = hour_counts[7:9]
+            am_peak = np.mean(am_peak)
+            
+            # average of trips 5-7pm
+            pm_peak = hour_counts[17:19]
+            pm_peak = np.mean(pm_peak)
+
+            diff = np.array([abs(peak_est-am_peak), abs(peak_est-pm_peak)])
+            c = np.where(diff < tol, 0, diff)
+            
+            if np.array_equal(c, [0,0]):
+                best_diffs.append(np.sum(diff))
+                best_sizes.append(s)
+
+        min_i = np.argmin(best_diffs)
+
+        return best_sizes[min_i]
+
+    def weekend(self, plot):
+        choices = np.arange(0, 24, 1)
+        riders = np.random.normal(12, 2, size=20000)
+
+        if plot == True:
+            plt.hist(riders, bins=80)
         
             # label axis appropriately
             hours = choices.astype('str')
@@ -99,7 +147,8 @@ class LightRail:
         """
         hmm
         """
-        # travel probabilities
+        # travel method probabilities
+        # given by Sound Transit estimates
         p_bus = .66
         p_drive = .19
         p_dropoff = .2
@@ -119,6 +168,15 @@ class LightRail:
         most_traffic = mode(best)
         least_traffic = mode(worst)
 
+        # light-rail daily riders
+
+        riders = self.weekday()
+
+        # create a 3-month period using this average ridership
+        
+        avg_daily_riders = np.repeat(riders, 91)
+        print(avg_daily_riders)
+        
         hw = HoltWinters()
         f = hw.forecast_2026()
         print(f)

@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.11 - 5/10/2020
+# Version: 1.11 - 5/11/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -144,7 +144,7 @@ class HoltWinters:
                 forecast[i] = smooth + trend + season_indices[mod_L]
         return forecast, future
 
-    def forecast_2026(self, plt=False, n=1):
+    def forecast_2026(self, plot=False, n=1):
         """
         Forecasts traffic out to 2026
         """
@@ -219,7 +219,7 @@ class HoltWinters:
         new = {'Time': d2026, 'Int Total': future_pts}
         t196_26 = pd.DataFrame(data=new)
         t196_26.set_index("Time", inplace=True)
-        if plt == True:
+        if plot == True:
             plt.plot(modeled, label = "Forecasted, " + str(n) + " Noise Level")
        
             # want to get trend for actual data

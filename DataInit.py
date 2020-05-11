@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.11 - 5/10/2020
+# Version: 1.10 - 5/5/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -100,6 +100,7 @@ class DataInitialization:
         t200_18 = self.day_sum(t200_18)
         t200_17 = self.day_sum(t200_17)
         return (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17)
+    
     def day_sum(self, df):
         """
         Calculates the daily totals using the hourly totals
