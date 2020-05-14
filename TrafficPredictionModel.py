@@ -9,7 +9,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.14 - 5/11/2020
+# Version: 1.15 - 5/13/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -22,6 +22,7 @@ import random as rand
 from DataInit import DataInitialization
 from TES import HoltWinters
 from LightRail import LightRail
+from DecisionTree import DecisionTree
 
 def data_reqs():
     """
@@ -40,19 +41,26 @@ def TES_reqs():
     hw = HoltWinters()
     c = DataInitialization()
     (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = c.read_files()
-    noisy = [1, 1.5, 2]
-    for noise in noisy:
-        HoltWinters.forecast_2026(hw, n=noise)
-    v = [t196_17, t196_18, t196_19]
-    d = pd.concat(v)
-    d = d.to_numpy()
-    plt.plot(d, label = "Actual (Until 2019)")
+    
+    r_196s = [t196_17, t196_18, t196_19]
+    r_200s = [t200_18, t200_19]
 
-    (modeled, b) = hw.triple_exp_smooth(v, 91, .54, .02, .86, 0)
+
+    actual = pd.concat(r_196s)
+    actual = actual.to_numpy()
+    # plot the actual data for comparison
+    plt.plot(actual, label = "Actual (Until 2019)")
+
+    # linear trend line
+    (modeled, t_future) = hw.triple_exp_smooth(r_196s, 21, .54, .02, .86, 0)
     x = np.arange(1, len(modeled)+1)
     z = np.polyfit(x, modeled, deg=1)
     p = np.poly1d(z)
-    pts = np.arange(1, (len(modeled)*3)+1)
+    pts = np.arange(1, (len(modeled)*3.5)+1)
+    eq = p(pts)
+    slope = eq[2] - eq[1]
+
+    points = hw.forecast_2026(slp=slope, plot=True)
     plt.plot(pts, p(pts), label = "Trendline")
     plt.legend()
     plt.show()
@@ -63,7 +71,7 @@ def light_rail_reqs():
     Run all code for 'Light-Rail requirements'
     """
     lr = LightRail()
-    lr.road_impact()
+    lr.get_riders()
 
 light_rail_reqs()
-
+#TES_reqs()

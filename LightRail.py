@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.14 - 5/11/2020
+# Version: 1.15 - 5/13/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -29,7 +29,7 @@ class LightRail:
     def __init__(self):
         pass
 
-    def weekday(self, plot=False):
+    def avg_day(self, plot=False):
         """
         Generates random weekday light-rail usage 
 
@@ -95,8 +95,8 @@ class LightRail:
         rider_size: Integer with appropriate number of daily riders
         """
 
-        # want estimate to be within 50 riders
-        tol = 50
+        # want estimate to be within 100 riders
+        tol = 100
         best_diffs = []
         best_sizes = []
         sizes = np.arange(start=10000, stop=30000, step=50)
@@ -122,38 +122,14 @@ class LightRail:
 
         return best_sizes[min_i]
 
-    def weekend(self, plot):
-        choices = np.arange(0, 24, 1)
-        riders = np.random.normal(12, 2, size=20000)
-
-        if plot == True:
-            plt.hist(riders, bins=80)
-        
-            # label axis appropriately
-            hours = choices.astype('str')
-            h = 0
-            for h in range(len(hours)):
-                hours[h] += ":00"
-            plt.suptitle("Randomly Generated Hourly 2026 Light-Rail Passengers \n " + 
-            "(Boardings and Alightings)", fontsize=18, x=.51)
-            plt.title("Based on Sound Transit Estimates and Current Light-Rail Data")
-            plt.xlabel("Time")
-            plt.ylabel("Hourly Passengers")
-            plt.xticks(ticks=choices, labels=hours)
-            plt.show()
-        return riders
-
-    def road_impact(self):
+    def get_riders(self):
         """
-        hmm
-        """
-        # travel method probabilities
-        # given by Sound Transit estimates
-        p_bus = .66
-        p_drive = .19
-        p_dropoff = .2
-        p_other = .13
+        Generates a week of light-rail riders that will impact traffic
+        at 196th based on travel probabilities and busiest traffic days
         
+        Returns:
+        week_riders: list containing amount of riders for each day M-Sun
+        """
         # best and worst day factor
         c = DataInitialization()
         (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = c.read_files()
@@ -167,17 +143,56 @@ class LightRail:
             worst.append(low)
         most_traffic = mode(best)
         least_traffic = mode(worst)
+        # returns Friday as best day, Sunday as worst
 
         # light-rail daily riders
+        # find the average of several trials
+        trials = np.arange(0, 100, 1)
+        ts = np.zeros(len(trials))
+        for i in trials:
+            ts[i] = self.avg_day()
+        riders = int(np.mean(ts))
+        print(riders)
+        # travel method probabilities given by Sound Transit estimates
+        p_car = .21
 
-        riders = self.weekday()
+        # pass 196th probability informed by data
+        tot_196 = (45+605+95+50+1100+405+60+585+203+189+381+248)
+        prob_196 = ((tot_196 / riders) + p_car)
 
+
+        # generate day with most traffic
+        most_riders = int(riders*1.2)
+        # generate day with least traffic
+        least_riders = int(riders*0.8)
+
+        week_riders = []
+        week = ['M', 'T', 'W', 'TH', 'F', 'SAT', 'SUN']
+        bus_probs = .1
+        for day in week:
+            impact = prob_196 + bus_probs
+            if day == most_traffic:
+                impacted = int(most_riders*impact)
+            elif day == least_traffic:
+                impacted = int(least_riders*impact)
+            else:
+                impacted = int(riders*impact)
+            week_riders.append(impacted)
+
+        print(week_riders)
+
+        return week_riders
+    def road_impact(self):
+        """
+        hmm
+        """
         # create a 3-month period using this average ridership
-        
-        avg_daily_riders = np.repeat(riders, 91)
-        print(avg_daily_riders)
-        
-        hw = HoltWinters()
-        f = hw.forecast_2026()
-        print(f)
+        week = self.get_riders()
+
+        #hw = HoltWinters()
+        #f = hw.forecast_2026()
+
+        # decision tree object
+        # call decision tree
+        # place light-rail rider either in 196th, 200th, both, or neither
         return
