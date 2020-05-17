@@ -68,7 +68,8 @@ class DataInitialization:
 
     def read_files(self):
         # import csv files
-        t196_19, t200_19, t196_18, t200_18, t196_17, t200_17 = None, None, None, None, None, None
+        t196_19, t200_19, t196_18 = None, None, None
+        t200_18, t196_17, t200_17 = None, None, None
         csv = ["196th_2019.csv", "200th_2019.csv", 
                "196th_2018.csv", "200th_2018.csv",
                "196th_2017.csv", "200th_2017.csv"]
@@ -184,7 +185,8 @@ class DataInitialization:
         """     
         # Test 1: confirm 91 days in each dataset after totalling
         print("Beginning testing for Data Initialization Class")
-        (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = self.read_files()
+        (t196_19, t196_18, t196_17, 
+         t200_19, t200_18, t200_17) = self.read_files()
         counts = [t196_19, t196_18, t196_17, t200_19, t200_18, t200_17]
         for d in counts:
             if len(d) != 91:

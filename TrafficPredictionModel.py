@@ -22,7 +22,6 @@ import random as rand
 from DataInit import DataInitialization
 from TES import HoltWinters
 from LightRail import LightRail
-from DecisionTree import DecisionTree
 
 def data_reqs():
     """
@@ -52,15 +51,16 @@ def TES_reqs():
     plt.plot(actual, label = "Actual (Until 2019)")
 
     # linear trend line
-    (modeled, t_future) = hw.triple_exp_smooth(r_196s, 21, .54, .02, .86, 0)
+    (modeled, t_future) = hw.triple_exp_smooth(r_196s, 21, .5, .01, .92, 0)
     x = np.arange(1, len(modeled)+1)
     z = np.polyfit(x, modeled, deg=1)
     p = np.poly1d(z)
-    pts = np.arange(1, (len(modeled)*3.5)+1)
+    pts = np.arange(1, (len(modeled)*2.7)+1)
     eq = p(pts)
     slope = eq[2] - eq[1]
+    print(slope)
 
-    points = hw.forecast_2026(slp=slope, plot=True)
+    (points, model) = hw.forecast_2024(slp=slope, plot=True)
     plt.plot(pts, p(pts), label = "Trendline")
     plt.legend()
     plt.show()
@@ -71,7 +71,11 @@ def light_rail_reqs():
     Run all code for 'Light-Rail requirements'
     """
     lr = LightRail()
-    lr.get_riders()
+    lr.avg_day(plot=True)
+    (affecting, low, high) = lr.get_riders()
+    print(affecting)
+    print(low)
+    print(high)
 
 light_rail_reqs()
 #TES_reqs()

@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime as dt
 import random as rand
+import math
+
 class HoltWinters:
     """
     This class will create a Holt-Winters methodology for predicting 
@@ -24,7 +26,7 @@ class HoltWinters:
 
     Math guidance credit:
     NIST/SEMATECH e-Handbook of Statistical Methods, 
-    https://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm, Apr 21, 2020
+    https://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm
     """
     def __init__(self):
         pass
@@ -130,25 +132,30 @@ class HoltWinters:
                     for t in dfs:
                         s += HoltWinters.trend(t, season_len)
                     mtrend = s / (len(dfs) + 1)
-                forecast[i] = (smooth + (m*mtrend) + (season_indices[i % season_len]))
-                future[j] = int((smooth + (m*mtrend) + (season_indices[i % season_len])))
+                forecast[i] = (smooth + (m*mtrend) + 
+                               (season_indices[i % season_len]))
+                future[j] = int((smooth + (m*mtrend) + 
+                                 (season_indices[i % season_len])))
                 j+=1
             # account for existing points in accordance with model
             else:
                 pt = int_total[i]
                 prev_smooth = smooth
-                smooth = a * (pt - season_indices[i % season_len]) + (1 - a) * (smooth + trend)
+                smooth = (a * (pt - season_indices[i % season_len]) + 
+                          (1 - a) * (smooth + trend))
 
                 prev_trend = trend
                 trend = b * (smooth - prev_smooth) + (1 - b) * prev_trend
 
-                season_indices[i % season_len] = g * (pt - smooth) + (1 - g) * season_indices[i % season_len]
+                season_indices[i % season_len] = (g * (pt - smooth) + 
+                                                  (1 - g) * 
+                                                  season_indices[i % season_len])
                 
                 forecast[i] = smooth + trend + season_indices[i % season_len]
 
         return forecast, future
 
-    def forecast_2026(self, slp, plot=False, n=1):
+    def forecast_2024(self, slp, plot=False, n=1):
         """
         Forecasts traffic out to 2026 using a combination of Holt-Winters
         and linear regression
@@ -159,20 +166,20 @@ class HoltWinters:
         n: noise level for sensitivity analysis 
 
         Returns:
-        t196_26: Predicted data points for 2026
+        t196_26: Predicted data points for 2024
         """
         p_title = ""
         c = DataInitialization()
         (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = c.read_files()
 
-        p_title = "196th and 44th Actual/Predicted Traffic 2017-2026"
+        p_title = "196th and 44th Actual/Predicted Traffic 2017-2024"
         veh_counts = [t196_17, t196_18, t196_19]
-        t196_21, t196_22, t196_23, t196_24, t196_25, t196_26 = 0,0,0,0,0,0
+        t196_21, t196_22, t196_23, t196_24 = 0,0,0,0
         
         # use Holt-Winters to forecast 1-year out
         (modeled, t196_20) = self.triple_exp_smooth(veh_counts, 
-                                                    21, .54, .02, 
-                                                    .86, 91, rnoise=n)
+                                                    21, .5, .01, 
+                                                    .92, 91, rnoise=n)
         
         # forecast until 2026 using Holt Winters forecast and linear
         # regression line
@@ -180,10 +187,8 @@ class HoltWinters:
         t196_22 = t196_21 + t196_21*(slp/len(modeled))
         t196_23 = t196_22 + t196_22*(slp/len(modeled))
         t196_24 = t196_23 + t196_23*(slp/len(modeled))
-        t196_25 = t196_24 + t196_24*(slp/len(modeled))
-        t196_26 = t196_25 + t196_25*(slp/len(modeled))
 
-        new_roads = [t196_21, t196_22, t196_23, t196_24, t196_25, t196_26]
+        new_roads = [t196_21, t196_22, t196_23, t196_24]
         vs = np.append(modeled, new_roads)
 
         if plot == True:
@@ -192,46 +197,111 @@ class HoltWinters:
             plt.xlabel("Day Count (September - November)")
             plt.ylabel("Vehicle Count")
             plt.legend()
-        return t196_26
+        return (t196_24, vs)
 
-def fitting(actual, df1, df2, df3):
-    """ 
-    Determines the best values of alpha, beta, and gamma to use
-    for my Holt-Winters forecasting. Utilizes residual and total sum of
-    squares to calculate R^2 and find the optimal parameters.
+    def season_avg(self):
+        """
+        Plots the seasonal averages
+        """
+        c = DataInitialization()
+        (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = c.read_files()
+        r_196s = [t196_17, t196_18, t196_19]
 
-    Parameters:
-    actual: dataframe with the true data
-    df1, df2, df3: dataframes to be analyzed in triple_exp_smooth
-    """
-    alpha = np.arange(start=0, stop=1, step=.02)
-    beta = np.arange(start=0, stop=1, step=.02)
-    gamma = np.arange(start=0, stop=1, step=.02)
-    r_best = -20000
-    best = ()
-    for a in alpha:
-        for b in beta:
-            for g in gamma:
-                # forecast
-                h = hw.triple_exp_smooth([df1, df2, df3], 21, a, b, g, 0)
-                sq_err = (d - h)**2
+        (modeled, t_future) = self.triple_exp_smooth(r_196s, 21, .5, 
+                                                     .01, .92, 0)
 
-                # calculate residual sum of squares
-                sse = np.sum(sq_err)
+        # obtain slope line
+        x = np.arange(1, len(modeled)+1)
+        z = np.polyfit(x, modeled, deg=1)
+        p = np.poly1d(z)
+        pts = np.arange(1, (len(modeled)*2.7)+1)
+        eq = p(pts)
+        slope = eq[2] - eq[1]
 
-                avg_act = np.mean(d)
-                sqe = (d - avg_act) ** 2
+        # forecast to 2024
+        (t24, model) = self.forecast_2024(slp=slope)
 
-                # calculate the total sum of squares
-                sst = np.sum(sqe)
+        # obtain seasonal averages
+        z = np.zeros(7)
+        s = np.concatenate((model,z))
+        season_avg = np.mean(s.reshape(-1, 21), axis=1)
+        season_avg = season_avg[:-1]
 
-                r_2 = 1 - sse/sst
+        # seasonal trend
+        xs = np.arange(1, len(season_avg)+1)
+        zs = np.polyfit(xs, season_avg, deg=1)
+        ps = np.poly1d(zs)
+        ptss = np.arange(1, (len(season_avg))+1)
+        plt.plot(ptss, ps(ptss), label = "Trendline")
+        
+        # plot 
+        plt.title("Seasonal Averages (21-Day Season Length)")
+        plt.ylabel("Numbers of Vehicles")
+        plt.xlabel("Season")
+        plt.plot(season_avg, label = "Averages")
+        plt.legend()
+        plt.show()
 
-                # find alpha, beta, and gamma with lowest R^2 value
-                if r_2 > r_best:
-                    best = (a, b, g)
-                    r_best = r_2
-                    print(str(r_best))
-    return best
+    def fitting(self, actual, df1, df2, df3):
+        """ 
+        Determines the best values of alpha, beta, and gamma to use
+        for my Holt-Winters forecasting. Utilizes residual and total sum of
+        squares to calculate R^2 and find the optimal parameters.
 
-#print(fitting(d, t196_17, t196_18, t196_19))
+        Parameters:
+        actual: dataframe with the true data
+        df1, df2, df3: dataframes to be analyzed in triple_exp_smooth
+        """
+        alpha = np.arange(start=.5, stop=1, step=.01)
+        beta = np.arange(start=.01, stop=.1, step=.01)
+        gamma = np.arange(start=.5, stop=1, step=.01)
+        avg_err = 0
+        std_prop = 0
+        for a in alpha:
+            for b in beta:
+                for g in gamma:
+                    (model, future) = self.triple_exp_smooth([df1, df2, df3], 
+                                                             21, a, b, g, 0)
+
+                    # average error
+                    err = (actual - model)
+                    abs_err = abs(err)
+                    season_err = np.mean(abs_err.reshape(-1, 21), axis=1)
+                    season_avg = np.mean(actual.reshape(-1, 21), axis=1)
+                    s_err_prop = (season_err / season_avg)
+                    s_err_prop = np.mean(s_err_prop) * 100
+
+                    # standard deviation
+                    stdev_m = np.std(model)
+                    stdev = np.std(actual)
+
+                    sq_err = err ** 2
+
+                    # calculate residual sum of squares
+                    sse = np.sum(sq_err)
+
+                    avg_act = np.mean(actual)
+                    sqe = (err - avg_act) ** 2
+
+                    # calculate the total sum of squares
+                    sst = np.sum(sqe)
+
+                    r_2 = 1 - sse/sst
+                    print("R^2: " + str(r_2))
+
+                    # percent error 
+                    std_prop = abs(stdev_m-stdev)
+                    std_prop = (std_prop/stdev) * 100
+                    print(s_err_prop)
+                    print(std_prop)
+
+                    if s_err_prop < 2 and std_prop < 2 and r_2 > .995:
+                        print("Alpha: " + str(a))
+                        print("Beta: " + str(b))
+                        print("Gamma: " + str(g))
+                        print("Average Residual Error: " + 
+                              str(s_err_prop) + "%")
+                        print("Standard Deviation Percent Error: " + 
+                              str(std_prop) + "%")
+                        return
+        

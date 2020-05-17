@@ -44,18 +44,19 @@ class LightRail:
         # 1% in the AM - 6 periods 
         # light-rail is closed 2am-5am
         morn = np.array([.003, .002, .0, .0, .0, .005])
-        # 40% AM peak - 4 periods
-        morn_peak = np.array([.07, .1, .13, .1])
-        # 10% mid-day - 5 periods
-        mid_day = np.array([.02, .02, .02, .02, .02])
-        # 40% PM peak - 5 periods
-        aft_peak = np.array([.04, .06, .1, .12, .08])
-        # 9% night - 4 periods
-        night = np.array([.04, .025, .015, .01])
-        trip_probs = np.concatenate((morn, morn_peak, mid_day, aft_peak, night))
+        # 35% AM peak - 4 periods
+        morn_peak = np.array([.07, .09, .11, .08])
+        # 20% mid-day - 5 periods
+        mid_day = np.array([.04, .04, .04, .04, .04])
+        # 35% PM peak - 4 periods
+        aft_peak = np.array([.07, .08, .11, .09])
+        # 9% night - 5 periods
+        night = np.array([.04, .02, .01, .01, .01])
+        trip_probs = np.concatenate((morn, morn_peak, mid_day, 
+                                     aft_peak, night))
 
         # find most accurate number of riders
-        anticipated_peak = 2500
+        anticipated_peak = 2285
         num_riders = self.rider_estimate(choices, trip_probs, anticipated_peak)
         riders = np.random.choice(choices, size=num_riders, p=trip_probs)
         times = np.sort(riders)
@@ -68,9 +69,11 @@ class LightRail:
             h = 0
             for h in range(len(hours)):
                 hours[h] += ":00"
-            plt.suptitle("Randomly Generated Hourly 2026 Light-Rail Passengers \n " + 
-            "(Boardings and Alightings)", fontsize=18, x=.51)
-            plt.title("Based on Sound Transit Estimates and Current Light-Rail Data")
+            plt.suptitle(
+                "Randomly Generated Hourly 2024 Light-Rail Passengers \n " + 
+                "(Boardings and Alightings)", fontsize=18, x=.51)
+            plt.title(
+                "Based on Sound Transit Estimates and Current Light-Rail Data")
             plt.xlabel("Time")
             plt.ylabel("Hourly Passengers")
             plt.xticks(ticks=choices, labels=hours)
@@ -103,12 +106,12 @@ class LightRail:
         for s in sizes:
             riders = np.random.choice(times, size=s, p=probs)
             hour_counts = np.bincount(riders)
-            # average of trips 7-9am
-            am_peak = hour_counts[7:9]
+            # average of trips 6-9am
+            am_peak = hour_counts[6:9]
             am_peak = np.mean(am_peak)
             
-            # average of trips 5-7pm
-            pm_peak = hour_counts[17:19]
+            # average of trips 3-6pm
+            pm_peak = hour_counts[15:18]
             pm_peak = np.mean(pm_peak)
 
             diff = np.array([abs(peak_est-am_peak), abs(peak_est-pm_peak)])
@@ -122,13 +125,14 @@ class LightRail:
 
         return best_sizes[min_i]
 
-    def get_riders(self):
+    def get_riders(self, noise=1):
         """
         Generates a week of light-rail riders that will impact traffic
         at 196th based on travel probabilities and busiest traffic days
         
         Returns:
         week_riders: list containing amount of riders for each day M-Sun
+        riders_range: list containing a range for expected riders
         """
         # best and worst day factor
         c = DataInitialization()
@@ -143,7 +147,6 @@ class LightRail:
             worst.append(low)
         most_traffic = mode(best)
         least_traffic = mode(worst)
-        # returns Friday as best day, Sunday as worst
 
         # light-rail daily riders
         # find the average of several trials
@@ -152,7 +155,10 @@ class LightRail:
         for i in trials:
             ts[i] = self.avg_day()
         riders = int(np.mean(ts))
-        print(riders)
+        l_ride = np.min(ts)
+        h_ride = np.max(ts)
+        riders_range = [l_ride, h_ride]
+
         # travel method probabilities given by Sound Transit estimates
         p_car = .21
 
@@ -163,36 +169,59 @@ class LightRail:
 
         # generate day with most traffic
         most_riders = int(riders*1.2)
+        most_riders_low = int(l_ride*1.2)
+        most_riders_high = int(h_ride*1.2)
         # generate day with least traffic
         least_riders = int(riders*0.8)
+        least_riders_low = int(l_ride*1.2)
+        least_riders_high = int(h_ride*1.2)
 
-        week_riders = []
+        avg_week_riders = []
+        low_week_riders = []
+        high_week_riders = []
         week = ['M', 'T', 'W', 'TH', 'F', 'SAT', 'SUN']
         bus_probs = .1
         for day in week:
             impact = prob_196 + bus_probs
             if day == most_traffic:
                 impacted = int(most_riders*impact)
+                l_impacted = int(most_riders_low*impact)
+                h_impacted = int(most_riders_high*impact)
             elif day == least_traffic:
                 impacted = int(least_riders*impact)
+                l_impacted = int(least_riders_low*impact)
+                h_impacted = int(least_riders_high*impact)
             else:
                 impacted = int(riders*impact)
-            week_riders.append(impacted)
+                l_impacted = int(l_ride*impact)
+                h_impacted = int(h_ride*impact)
+            avg_week_riders.append(impacted)
+            low_week_riders.append(l_impacted)
+            high_week_riders.append(h_impacted)
 
-        print(week_riders)
+        return (avg_week_riders, low_week_riders, high_week_riders)
 
-        return week_riders
-    def road_impact(self):
+    def impact(self, weekly_riders, low_est_riders, high_est_riders, t2024):
         """
-        hmm
+        Using the range of expected average weekly riders, and the
+        expected vehicle traffic for 2024, determines the new traffic
+        estimate for 2024
+
+        Parameters:
+        weekly_riders: int list containing expected average daily ridership
+                       for one week
+        low_est_riders: int list containing low estimate of expected average
+                        daily ridership for one week
+        high_est_riders: int list containing high estimate of expected average
+                         daily ridership for one week
+        t2024: numpy array containing predicted vehicle traffic for one 3-month
+               period in 2024
         """
-        # create a 3-month period using this average ridership
-        week = self.get_riders()
 
-        #hw = HoltWinters()
-        #f = hw.forecast_2026()
+        avg_period = np.repeat(weekly_riders, 13)
+        low_period = np.repeat(low_est_riders, 13)
+        high_period = np.repeat(high_est_riders, 13)
 
-        # decision tree object
-        # call decision tree
-        # place light-rail rider either in 196th, 200th, both, or neither
-        return
+        avg_2024 = t2024 + period
+        low_2024 = t2024 + low_period
+        high_2024 = t2024 + high_period
