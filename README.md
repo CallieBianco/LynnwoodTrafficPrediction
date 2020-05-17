@@ -18,3 +18,7 @@ Written in Python 3.7
 - pandas
 - matplotlib
 - numpy
+- math
+- statistics
+- datetime
+- random
