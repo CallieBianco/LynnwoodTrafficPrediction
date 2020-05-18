@@ -71,11 +71,10 @@ def light_rail_reqs():
     Run all code for 'Light-Rail requirements'
     """
     lr = LightRail()
-    lr.avg_day(plot=True)
+    hw = HoltWinters()
+    (future, model) = hw.forecast_2024(slp=10.3)
     (affecting, low, high) = lr.get_riders()
-    print(affecting)
-    print(low)
-    print(high)
+    lr.impact(affecting, low, high, future)
 
 light_rail_reqs()
 #TES_reqs()

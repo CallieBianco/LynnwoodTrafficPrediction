@@ -57,9 +57,18 @@ class LightRail:
 
         # find most accurate number of riders
         anticipated_peak = 2285
-        num_riders = self.rider_estimate(choices, trip_probs, anticipated_peak)
-        riders = np.random.choice(choices, size=num_riders, p=trip_probs)
-        times = np.sort(riders)
+        peak_adj = anticipated_peak*.2
+        low_peak = anticipated_peak - peak_adj
+        high_peak = anticipated_peak + peak_adj
+
+        avg_num_riders = self.rider_estimate(choices, trip_probs, anticipated_peak)
+        low_num_riders = self.rider_estimate(choices, trip_probs, low_peak)
+        high_num_riders = self.rider_estimate(choices, trip_probs, high_peak)
+
+        avg_riders = np.random.choice(choices, size=avg_num_riders, p=trip_probs)
+        low_riders = np.random.choice(choices, size=low_num_riders, p=trip_probs)
+        high_riders = np.random.choice(choices, size=high_num_riders, p=trip_probs)
+        times = np.sort(avg_riders)
 
         if plot == True:
             plt.hist(times, bins=80)
@@ -70,17 +79,17 @@ class LightRail:
             for h in range(len(hours)):
                 hours[h] += ":00"
             plt.suptitle(
-                "Randomly Generated Hourly 2024 Light-Rail Passengers \n " + 
+                "Randomly Generated Average Hourly 2024 Light-Rail Passengers \n " + 
                 "(Boardings and Alightings)", fontsize=18, x=.51)
             plt.title(
                 "Based on Sound Transit Estimates and Current Light-Rail Data")
             plt.xlabel("Time")
             plt.ylabel("Hourly Passengers")
             plt.xticks(ticks=choices, labels=hours)
-            n_ride = "Number of Riders: " + str(num_riders)
+            n_ride = "Number of Riders: " + str(avg_num_riders)
             plt.text(0, 2800, n_ride, bbox=dict(facecolor='green', alpha=.5))
             plt.show()
-        return num_riders
+        return (avg_num_riders, low_num_riders, high_num_riders)
     
     def rider_estimate(self, times, probs, peak_est):
         """
@@ -102,7 +111,7 @@ class LightRail:
         tol = 100
         best_diffs = []
         best_sizes = []
-        sizes = np.arange(start=10000, stop=30000, step=50)
+        sizes = np.arange(start=5000, stop=40000, step=50)
         for s in sizes:
             riders = np.random.choice(times, size=s, p=probs)
             hour_counts = np.bincount(riders)
@@ -131,8 +140,10 @@ class LightRail:
         at 196th based on travel probabilities and busiest traffic days
         
         Returns:
-        week_riders: list containing amount of riders for each day M-Sun
-        riders_range: list containing a range for expected riders
+        avg_week_riders: list containing average amount of riders for each day M-Sun
+        low_week_riders: list containing low end of estimate for amount of riders
+        high_week_riders: list containing high end of estimate for amount of riders
+        
         """
         # best and worst day factor
         c = DataInitialization()
@@ -150,13 +161,17 @@ class LightRail:
 
         # light-rail daily riders
         # find the average of several trials
-        trials = np.arange(0, 100, 1)
-        ts = np.zeros(len(trials))
+        trials = np.arange(0, 10, 1)
+        ars = np.zeros(len(trials))
+        lrs = np.zeros(len(trials))
+        hrs = np.zeros(len(trials))
+
         for i in trials:
-            ts[i] = self.avg_day()
-        riders = int(np.mean(ts))
-        l_ride = np.min(ts)
-        h_ride = np.max(ts)
+            (ars[i], lrs[i], hrs[i]) = self.avg_day()
+        avg_riders = int(np.mean(ars))
+        l_ride = int(np.mean(lrs))
+        h_ride = int(np.mean(hrs))
+
         riders_range = [l_ride, h_ride]
 
         # travel method probabilities given by Sound Transit estimates
@@ -164,17 +179,18 @@ class LightRail:
 
         # pass 196th probability informed by data
         tot_196 = (45+605+95+50+1100+405+60+585+203+189+381+248)
-        prob_196 = ((tot_196 / riders) + p_car)
+        prob_196 = ((tot_196 / avg_riders) + p_car)
 
 
         # generate day with most traffic
-        most_riders = int(riders*1.2)
+        most_riders = int(avg_riders*1.2)
         most_riders_low = int(l_ride*1.2)
         most_riders_high = int(h_ride*1.2)
+
         # generate day with least traffic
-        least_riders = int(riders*0.8)
-        least_riders_low = int(l_ride*1.2)
-        least_riders_high = int(h_ride*1.2)
+        least_riders = int(avg_riders*0.8)
+        least_riders_low = int(l_ride*0.8)
+        least_riders_high = int(h_ride*0.8)
 
         avg_week_riders = []
         low_week_riders = []
@@ -192,7 +208,7 @@ class LightRail:
                 l_impacted = int(least_riders_low*impact)
                 h_impacted = int(least_riders_high*impact)
             else:
-                impacted = int(riders*impact)
+                impacted = int(avg_riders*impact)
                 l_impacted = int(l_ride*impact)
                 h_impacted = int(h_ride*impact)
             avg_week_riders.append(impacted)
@@ -204,8 +220,8 @@ class LightRail:
     def impact(self, weekly_riders, low_est_riders, high_est_riders, t2024):
         """
         Using the range of expected average weekly riders, and the
-        expected vehicle traffic for 2024, determines the new traffic
-        estimate for 2024
+        expected vehicle traffic for 2024, determines and plots the new 
+        traffic estimate for 2024
 
         Parameters:
         weekly_riders: int list containing expected average daily ridership
@@ -222,6 +238,24 @@ class LightRail:
         low_period = np.repeat(low_est_riders, 13)
         high_period = np.repeat(high_est_riders, 13)
 
-        avg_2024 = t2024 + period
+        avg_2024 = t2024 + avg_period
         low_2024 = t2024 + low_period
         high_2024 = t2024 + high_period
+
+        h_inc = abs((1 - (np.sum(t2024)/np.sum(high_2024)))) * 100 
+        l_inc = abs((1 - (np.sum(t2024)/np.sum(low_2024)))) * 100
+        h_inc = int(h_inc)
+        l_inc = int(l_inc)
+
+        plt.plot(t2024, label="Predicted Without Light-Rail")
+        plt.plot(avg_2024, label="Average Expected Estimate After Light-Rail")
+        plt.plot(low_2024, label="Low Expected Estimate After Light-Rail")
+        plt.plot(high_2024, label="High Expected Estimate After Light-Rail")
+        plt.legend()
+        plt.suptitle("Light-Rail Ridership Predicted Impact on Vehicle Traffic 2024",
+                     fontsize=18, x=.51)
+        plt.xlabel("Day (Sept.-Nov.)")
+        plt.ylabel("Vehicle Count")
+        inc_statement = "Predicted Increase In Traffic: " + str(l_inc) + "%-" + str(h_inc) + "%"
+        plt.title(inc_statement)
+        plt.show()
