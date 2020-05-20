@@ -16,6 +16,7 @@
 # module imports
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 import datetime as dt
 import random as rand
@@ -74,7 +75,32 @@ def light_rail_reqs():
     hw = HoltWinters()
     (future, model) = hw.forecast_2024(slp=10.3)
     (affecting, low, high) = lr.get_riders()
-    lr.impact(affecting, low, high, future)
+    #fig, ax = plt.subplots()
+    plt.plot(low, label="Low Estimate")
+    plt.plot(affecting, label= "Average Estimate")
+    plt.plot(high, label= "High Estimate")
+    plt.legend()
+    plt.xlabel("Varying Bus Probabilities")
+    tix = ['.05', '.10', '.15', '.20', '.25', '.30', '.35', '.40', '.45']
+    tx = np.arange(0, 70, 7)
+    plt.xticks(tx, tix)
+    #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    plt.ylabel("Number of Riders Using 196th and 44th")
+    plt.title("How Changing Bus Probability Impacts Predicted \n Additional " +
+              "Vehicle Traffic From Light-Rail Riders")
+    plt.show()
 
-light_rail_reqs()
+def revenue_reqs():
+    """
+    Run all code for 'Revenue' requirements
+    """
+    lr = LightRail()
+    (avg, low, high) = lr.avg_day()
+
+    lr.revenue(avg, low, high)
+
+#light_rail_reqs()
 #TES_reqs()
+revenue_reqs()
+
+

@@ -196,28 +196,29 @@ class LightRail:
         low_week_riders = []
         high_week_riders = []
         week = ['M', 'T', 'W', 'TH', 'F', 'SAT', 'SUN']
-        bus_probs = .1
-        for day in week:
-            impact = prob_196 + bus_probs
-            if day == most_traffic:
-                impacted = int(most_riders*impact)
-                l_impacted = int(most_riders_low*impact)
-                h_impacted = int(most_riders_high*impact)
-            elif day == least_traffic:
-                impacted = int(least_riders*impact)
-                l_impacted = int(least_riders_low*impact)
-                h_impacted = int(least_riders_high*impact)
-            else:
-                impacted = int(avg_riders*impact)
-                l_impacted = int(l_ride*impact)
-                h_impacted = int(h_ride*impact)
-            avg_week_riders.append(impacted)
-            low_week_riders.append(l_impacted)
-            high_week_riders.append(h_impacted)
+        bus_probs = np.arange(start=.05, stop=.5, step=.05)
+        for b in bus_probs:
+            for day in week:
+                impact = prob_196 + b
+                if day == most_traffic:
+                    impacted = int(most_riders*impact)
+                    l_impacted = int(most_riders_low*impact)
+                    h_impacted = int(most_riders_high*impact)
+                elif day == least_traffic:
+                    impacted = int(least_riders*impact)
+                    l_impacted = int(least_riders_low*impact)
+                    h_impacted = int(least_riders_high*impact)
+                else:
+                    impacted = int(avg_riders*impact)
+                    l_impacted = int(l_ride*impact)
+                    h_impacted = int(h_ride*impact)
+                avg_week_riders.append(impacted)
+                low_week_riders.append(l_impacted)
+                high_week_riders.append(h_impacted)
 
         return (avg_week_riders, low_week_riders, high_week_riders)
 
-    def impact(self, weekly_riders, low_est_riders, high_est_riders, t2024):
+    def impact(self, weekly_riders, low_est_riders, high_est_riders, t2024, plot=False):
         """
         Using the range of expected average weekly riders, and the
         expected vehicle traffic for 2024, determines and plots the new 
@@ -234,6 +235,7 @@ class LightRail:
                period in 2024
         """
 
+        # add light-rail ridership to previous predicted vehicle counts
         avg_period = np.repeat(weekly_riders, 13)
         low_period = np.repeat(low_est_riders, 13)
         high_period = np.repeat(high_est_riders, 13)
@@ -242,20 +244,82 @@ class LightRail:
         low_2024 = t2024 + low_period
         high_2024 = t2024 + high_period
 
+        # calculate percentage increases
         h_inc = abs((1 - (np.sum(t2024)/np.sum(high_2024)))) * 100 
         l_inc = abs((1 - (np.sum(t2024)/np.sum(low_2024)))) * 100
         h_inc = int(h_inc)
         l_inc = int(l_inc)
 
-        plt.plot(t2024, label="Predicted Without Light-Rail")
-        plt.plot(avg_2024, label="Average Expected Estimate After Light-Rail")
-        plt.plot(low_2024, label="Low Expected Estimate After Light-Rail")
-        plt.plot(high_2024, label="High Expected Estimate After Light-Rail")
-        plt.legend()
-        plt.suptitle("Light-Rail Ridership Predicted Impact on Vehicle Traffic 2024",
-                     fontsize=18, x=.51)
-        plt.xlabel("Day (Sept.-Nov.)")
-        plt.ylabel("Vehicle Count")
-        inc_statement = "Predicted Increase In Traffic: " + str(l_inc) + "%-" + str(h_inc) + "%"
-        plt.title(inc_statement)
+        # plot
+        if plot == True:
+            plt.plot(t2024, label="Predicted Without Light-Rail")
+            plt.plot(avg_2024, label="Average Expected Estimate After Light-Rail")
+            plt.plot(low_2024, label="Low Expected Estimate After Light-Rail")
+            plt.plot(high_2024, label="High Expected Estimate After Light-Rail")
+            plt.legend()
+            plt.suptitle("Light-Rail Ridership Predicted Impact on Vehicle Traffic 2024",
+                         fontsize=18, x=.51)
+            plt.xlabel("Day (Sept.-Nov.)")
+            plt.ylabel("Vehicle Count")
+            inc_statement = "Predicted Increase In Traffic: " + str(l_inc) + "%-" + str(h_inc) + "%"
+            plt.title(inc_statement)
+            plt.show()
+
+        return avg_2024, low_2024, high_2024
+
+    def revenue(self, avg_est, low_est, high_est):
+        """
+        Analyzes revenue in a variety of ways
+
+        Parameters:
+        avg_est: int representing average daily riders (avg estimate)
+        low_est: int representing average daily riders (low estimate)
+        high_est: int representing average daily riders (high estimate)
+        """
+        # prices
+        base_fare = 2.25
+        addtl_mile = .05
+        exisiting_max = 1
+        
+        # mileage to stations from city center
+        mtlake_terr = 3
+        shore_185 = 5
+        shore_145 = 7
+        northgate = 9
+        uw = 15
+
+        min_trip = base_fare + (addtl_mile*mtlake_terr)
+        max_trip = base_fare + (addtl_mile*uw) + exisiting_max
+
+        ridership = [low_est, avg_est, high_est]
+
+        # analyze if all riders pay either min or max fare
+        all_min_trips = np.zeros(len(ridership))
+        all_max_trips = np.zeros(len(ridership))
+        
+        for i in range(len(ridership)):
+            all_min_trips[i] = ridership[i] * min_trip
+            all_max_trips[i] = ridership[i] * max_trip
+
+        # plot in grouped bar chart
+        labels = ['Minimum Price All Trips', 'Maximum Price All Trips']
+        width= .1
+        x = np.arange(len(labels))
+
+        low = [all_min_trips[0], all_max_trips[0]]
+        avg = [all_min_trips[1], all_max_trips[1]]
+        high = [all_min_trips[2], all_max_trips[2]]
+
+        fig, ax = plt.subplots()
+
+        ax.bar(x - width, low, width, label="Low Ridership Estimate")
+        ax.bar(x, avg, width, label="Average Ridership Estimate")
+        ax.bar(x + width, high, width, label="High Ridership Estimate")
+
+        ax.legend()
+        ax.set_ylabel("Revenue ($)")
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels)
+        ax.set_title("Daily Revenue Generated for Each Ridership Estimate")
         plt.show()
+            
