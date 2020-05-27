@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.15 - 5/13/2020
+# Version: 1.20 - 5/26/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -30,6 +30,64 @@ class HoltWinters:
     """
     def __init__(self):
         pass
+
+    def main(self, type=None):
+        """
+        Main program to be run in the class. 
+
+        Parameters:
+        type = char representing which main function to be executed.
+            A: plots the 2024 forecasted data w/actual data
+               and actual data trendline
+            B: plots the seasonal averages to 2024
+            C: finds best values of alpha, beta, and gamma (takes awhile)
+        """
+        di = DataInitialization()
+        (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = di.read_files()
+    
+        # plots the forecast to 2024
+        # A
+        if type == "A":
+            r_196s = [t196_17, t196_18, t196_19]
+
+            actual = pd.concat(r_196s)
+            actual = actual.to_numpy()
+
+            # plot the actual data for comparison
+            plt.plot(actual, 'g', label="Actual")
+            plt.title("Daily Traffic Counts at 196th and 44th - 2017-2019")
+            plt.xlabel("Day (Sept.-Nov.)")
+            plt.ylabel("Vehicle Count")
+
+            # linear trend line
+            (modeled, t_future) = self.triple_exp_smooth(r_196s, 21, .5, .01, .92, 0)
+            x = np.arange(1, len(modeled)+1)
+            z = np.polyfit(x, modeled, deg=1)
+            p = np.poly1d(z)
+            pts = np.arange(1, (len(modeled)*2.7)+1)
+            eq = p(pts)
+            slope = (eq[2] - eq[1])/2
+
+            (points, model) = self.forecast_2024(slp=slope, plot=True)
+            plt.plot(pts, p(pts), label = "Trendline")
+            plt.legend()
+            plt.show()
+
+        # plots the seasonal averages
+        # B
+        if type == "B":
+            self.season_avg()
+
+        # runs the model fitting to find optimal values for 
+        # alpha, beta, and gamma
+        # C
+        if type == "C":
+            r_196s = [t196_17, t196_18, t196_19]
+            data = pd.concat(r_196s)
+            data = data.to_numpy()
+            data = data.flatten()
+            self.fitting(data, t196_17, t196_18, t196_19)
+
 
     def trend(df, season_len, noise=1):
         """
@@ -157,7 +215,7 @@ class HoltWinters:
 
     def forecast_2024(self, slp, plot=False, n=1):
         """
-        Forecasts traffic out to 2026 using a combination of Holt-Winters
+        Forecasts traffic out to 2024 using a combination of Holt-Winters
         and linear regression
 
         Parameters:
@@ -166,7 +224,7 @@ class HoltWinters:
         n: noise level for sensitivity analysis 
 
         Returns:
-        t196_26: Predicted data points for 2024
+        t196_24: Predicted data points for 2024
         """
         p_title = ""
         c = DataInitialization()
@@ -181,7 +239,7 @@ class HoltWinters:
                                                     21, .5, .01, 
                                                     .92, 91, rnoise=n)
         
-        # forecast until 2026 using Holt Winters forecast and linear
+        # forecast until 2024 using Holt Winters forecast and linear
         # regression line
         t196_21 = t196_20 + t196_20*(slp/len(modeled))
         t196_22 = t196_21 + t196_21*(slp/len(modeled))
@@ -216,7 +274,7 @@ class HoltWinters:
         p = np.poly1d(z)
         pts = np.arange(1, (len(modeled)*2.7)+1)
         eq = p(pts)
-        slope = eq[2] - eq[1]
+        slope = (eq[2] - eq[1])/2
 
         # forecast to 2024
         (t24, model) = self.forecast_2024(slp=slope)
@@ -262,7 +320,6 @@ class HoltWinters:
                 for g in gamma:
                     (model, future) = self.triple_exp_smooth([df1, df2, df3], 
                                                              21, a, b, g, 0)
-
                     # average error
                     err = (actual - model)
                     abs_err = abs(err)

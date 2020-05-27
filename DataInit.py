@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.15 - 5/13/2020
+# Version: 1.20 - 5/26/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -25,29 +25,34 @@ class DataInitialization:
     def __init__(self):
         pass
 
-    def main(self, visual=None):
+    def main(self, type=None):
         """
-        Main program to be run in the class
+        Main program to be run in the class. 
+
+        Parameters:
+        type = char representing which main function to be executed.
+            A: individual plots of the intersection
+            B: plots with years stacked on top
+            C: plots the 2017 years
+            D: all years on one graph
         """
         # provide inidivual plots
         (t196_19, t196_18, t196_17, t200_19, t200_18, t200_17) = self.read_files()
         # A
-        if visual == "A":
+        if type == "A":
             self.visualize(t196_19, "singleplot", 
                            "Daily Traffic Counts at 196th and 44th - 2019",
                            'c')  
             self.visualize(t196_18, "singleplot", 
                            "Daily Traffic Counts at 196th and 44th - 2018",
                            'g')  
-            self.visualize(t200_19, "singleplot", 
-                           "Daily Traffic Counts at 200th and 44th - 2019",
-                           'r')   
-            self.visualize(t200_18, "singleplot", 
-                           "Daily Traffic Counts at 200th and 44th - 2018",
-                           'k')   
+            self.visualize(t196_17, "singleplot", 
+                           "Daily Traffic Counts at 196th and 44th - 2017",
+                           'b')  
+            
         # combined years
         # B
-        elif visual == "B":
+        elif type == "B":
             self.visualize(t196_19, "multiplot", 
                            "Daily Traffic Counts at 196th and 44th 2018-2019",
                            'b', df1=t196_18)
@@ -55,18 +60,42 @@ class DataInitialization:
                            "Daily Traffic Counts at 200th and 44th 2018-2019",
                            'b', df1=t200_18)
 
-        elif visual == "C":
+        # various graphs 
+        # C
+        elif type == "C":
             self.visualize(t196_17, "singleplot", 
                            "Daily Traffic Counts at 196th and 44th - 2017",
                            'b')  
             self.visualize(t200_17, "singleplot", 
                            "Daily Traffic Counts at 200th and 44th - 2017",
                            'g')   
-            self.visualize(t196_18, "multiplot", 
-                           "Daily Traffic Counts at 200th and 44th 2018-2019",
-                           'b', df1=t196_17)
+
+        # all years on one graph
+        # D
+        elif type == "D":
+            r_196s = [t196_17, t196_18, t196_19]
+            combined = pd.concat(r_196s)
+            combined = combined.to_numpy()
+            combined = combined.flatten()
+
+            # trendline
+            x = np.arange(1, len(combined)+1)
+            z = np.polyfit(x, combined, deg=1)
+            p = np.poly1d(z)
+            pts = np.arange(1, (len(combined))+1)
+
+            # plot
+            plt.plot(combined)
+            plt.plot(pts, p(pts), "g", label = "Trendline")
+            plt.title("Daily Traffic Counts at 196th and 44th 2017 - 2019")
+            plt.xlabel("Day (Sept.-Nov.)")
+            plt.ylabel("Vehicle Count")
+            plt.show()
 
     def read_files(self):
+        """
+        Reads in the csv files and store the data into DataFrames.
+        """
         # import csv files
         t196_19, t200_19, t196_18 = None, None, None
         t200_18, t196_17, t200_17 = None, None, None
@@ -93,6 +122,7 @@ class DataInitialization:
             i+=1
 
         (t196_19, t200_19, t196_18, t200_18, t196_17, t200_17) = intersections
+
         # obtain daily counts instead of hourly
         t196_19 = self.day_sum(t196_19)
         t196_18 = self.day_sum(t196_18)
@@ -181,7 +211,7 @@ class DataInitialization:
 
     def tests(self):
         """
-        Tests data frame accuracy in a variety of ways
+        Tests DataFrame accuracy in a variety of ways
         """     
         # Test 1: confirm 91 days in each dataset after totalling
         print("Beginning testing for Data Initialization Class")
@@ -210,7 +240,7 @@ class DataInitialization:
         print("Test 2: Passed")
 
         # Test 3: Bad parameter error checking
-        message = c.visualize(t196_19, "Histogram", "Plot", 'k')
+        message = self.visualize(t196_19, "Histogram", "Plot", 'k')
         if message != "Invalid plot type given":
             print("Test 3: Failed")
             return

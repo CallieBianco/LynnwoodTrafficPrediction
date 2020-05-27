@@ -6,7 +6,7 @@
 #
 # Additional Documentation:
 # Author: Callie Bianco
-# Version: 1.15 - 5/13/2020
+# Version: 1.20 - 5/26/2020
 # Written for Python 3.7.2
 #==============================================================================
 
@@ -29,6 +29,45 @@ class LightRail:
     def __init__(self):
         pass
 
+    def main(self, type=None):
+        """
+        Main program to be run in the class. 
+
+        Parameters:
+        type = char representing which main function to be executed.
+            A: plots the histogram of expected avg daily ridership
+            B: graphs sensitivity analysis for bus probability variable
+            C: plots the impact on vehicle traffic 2024 from light-rail
+        """
+        # daily ridership
+        # A
+        if type == "A":
+            self.avg_day(plot=True)
+
+        # graph bus probability sensitivity
+        # B
+        elif type == "B":
+            (affecting, low, high) = self.get_riders(bus=True)
+            plt.plot(low, label="Low Estimate")
+            plt.plot(affecting, label= "Average Estimate")
+            plt.plot(high, label= "High Estimate")
+            plt.legend()
+            plt.xlabel("Varying Bus Probabilities")
+            tix = ['.05', '.10', '.15', '.20', '.25', '.30', '.35', '.40', '.45']
+            tx = np.arange(0, 70, 7)
+            plt.xticks(tx, tix)
+            plt.ylabel("Number of Riders Using 196th and 44th")
+            plt.title("How Changing Bus Probability Impacts Predicted \n Additional " +
+                      "Vehicle Traffic From Light-Rail Riders")
+            plt.show()
+        
+        # traffic impacts
+        # C
+        elif type == "C":
+            hw = HoltWinters()
+            (future, model) = hw.forecast_2024(slp=5.1)
+            (affecting, low, high) = self.get_riders(bus=False)
+            self.impact(affecting, low, high, future, plot=True)
     def avg_day(self, plot=False):
         """
         Generates random weekday light-rail usage 
@@ -134,7 +173,7 @@ class LightRail:
 
         return best_sizes[min_i]
 
-    def get_riders(self, noise=1):
+    def get_riders(self, bus=False):
         """
         Generates a week of light-rail riders that will impact traffic
         at 196th based on travel probabilities and busiest traffic days
@@ -196,7 +235,11 @@ class LightRail:
         low_week_riders = []
         high_week_riders = []
         week = ['M', 'T', 'W', 'TH', 'F', 'SAT', 'SUN']
-        bus_probs = np.arange(start=.05, stop=.5, step=.05)
+        if bus == True:
+            bus_probs = np.arange(start=.05, stop=.5, step=.05)
+        else:
+            bus_probs = np.arange(start=.25, stop=.3, step=.05)
+
         for b in bus_probs:
             for day in week:
                 impact = prob_196 + b
